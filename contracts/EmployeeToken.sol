@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EmployeeToken is ERC20, ERC20Burnable, Ownable {
     address employeeContract;
-    uint256 immutable rank1 = 100_000;
-    uint256 immutable rank2 = 150_000;
-    uint256 immutable rank3 = 200_000;
-    uint256 immutable rank4 = 300_000;
+    uint256 immutable rank1Amount = 100_000;
+    uint256 immutable rank2Amount = 150_000;
+    uint256 immutable rank3Amount = 200_000;
+    uint256 immutable rank4Amount = 300_000;
     mapping(address => bool) public isAdmin;
 
     modifier onlyEmployeeContract() {
@@ -30,13 +30,13 @@ contract EmployeeToken is ERC20, ERC20Burnable, Ownable {
 
     function mint(address to, uint256 _rank) public onlyEmployeeContract {
         if (_rank == 1) {
-            _mint(to, rank1);
+            _mint(to, rank1Amount);
         } else if (_rank == 2) {
-            _mint(to, rank2);
+            _mint(to, rank2Amount);
         } else if (_rank == 3) {
-            _mint(to, rank3);
+            _mint(to, rank3Amount);
         } else {
-            _mint(to, rank4);
+            _mint(to, rank4Amount);
         }
     }
 

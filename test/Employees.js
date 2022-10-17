@@ -1,9 +1,6 @@
 const helpers = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { ethers, hre } = require("hardhat");
-// Helpers
-const toWei = (num) => ethers.utils.parseEther(num.toString());
-const fromWei = (num) => ethers.utils.formatEther(num);
 
 describe("Employees", async function () {
   let deployer,
@@ -39,6 +36,7 @@ describe("Employees", async function () {
 
     // Update Contract Address
     await token.updateEmployeeContract(employees.address);
+    await payroll.updateEmployeeContractAddress(employees.address);
     await payroll.updateEmployeeContract(employees.address);
   });
 
@@ -116,6 +114,48 @@ describe("Employees", async function () {
       await expect(
         employees.connect(account2).releaseEmployee(2)
       ).to.be.revertedWith("Only Amins can call this function");
+    });
+  });
+
+  describe("Payroll", function () {
+    before("Should create new employee", async function () {
+      await employees.addEmployee(
+        "John Doe",
+        1,
+        111987,
+        50000,
+        1,
+        account3.address
+      );
+      await employees.addEmployee(
+        "Joao Doe",
+        1,
+        111987,
+        50000,
+        1,
+        account3.address
+      );
+      await employees.addEmployee(
+        "Jay Doe",
+        1,
+        111987,
+        50000,
+        1,
+        account3.address
+      );
+      await employees.addEmployee(
+        "Toby Doe",
+        1,
+        111987,
+        50000,
+        1,
+        account3.address
+      );
+      await employees.releaseEmployee(4);
+    });
+    it("Gets employees", async function () {
+      const emp = await employees.getActiveEmployees();
+      console.log(emp);
     });
   });
 });

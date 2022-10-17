@@ -8,7 +8,7 @@ import "./EmployeePayroll.sol";
 contract Employees is Ownable {
     EmployeeToken public EMP;
     EmployeePayroll public payroll;
-    uint256 public counter;
+    uint256 public employeeCounter;
 
     struct Employee {
         string name;
@@ -24,7 +24,7 @@ contract Employees is Ownable {
     mapping(address => bool) public isAdmin;
 
     event EmpoloyeeCreated(
-        string _name,
+        string indexed _name,
         uint256 _rank,
         uint256 _dob,
         uint256 _salary,
@@ -57,7 +57,7 @@ contract Employees is Ownable {
         address _wallet
     ) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
-        Employee storage employee = employees[counter];
+        Employee storage employee = employees[employeeCounter];
         employee.name = _name;
         employee.rank = _rank;
         employee.dateOfBirth = _dob;
@@ -67,7 +67,7 @@ contract Employees is Ownable {
         employee.active = true;
 
         unchecked {
-            counter++;
+            employeeCounter++;
         }
 
         EMP.mint(employee.walletAddress, employee.rank);
@@ -78,7 +78,7 @@ contract Employees is Ownable {
     // Delete Employee
     function releaseEmployee(uint256 _employeeId) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
-        require(_employeeId <= counter, "Employee ID does not exist");
+        require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         employee.active = false;
 
@@ -93,11 +93,25 @@ contract Employees is Ownable {
     }
 
     // Assign Role
-    function assignRank(uint256 _employeeId, uint256 _rank) public  {
+    function assignRank(uint256 _employeeId, uint256 _rank) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
-        require(_employeeId <= counter, "Employee ID does not exist");
+        require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         employee.rank = _rank;
+    }
+
+    function getActiveEmployees() public view returns (Employee[] memory) {
+        // Get all active employees
+        Employee[] memory activeEmployeeArray = new Employee[](employeeCounter);
+         for (uint256 i = 1; i < employeeCounter; i++) {
+            Employee memory employeeLoop = getEmployee(i);
+            if (employeeLoop.active) {
+                activeEmployeeArray[i] = employeeLoop;
+            } 
+        }
+        return activeEmployeeArray;
+
+        // call mint contract to pay
     }
 
     // Getter Functions
@@ -108,5 +122,10 @@ contract Employees is Ownable {
     {
         Employee storage employee = employees[_employeeId];
         return employee;
+    }
+
+    // Setter Functions
+    function setAdmin(address _address, bool _isAdmin) external onlyOwner {
+        isAdmin[_address] = _isAdmin;
     }
 }
