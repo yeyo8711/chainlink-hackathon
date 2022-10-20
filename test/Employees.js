@@ -8,19 +8,21 @@ describe("Employees", async function () {
     account2,
     account3,
     account4,
+    account5,
     employees,
-    token,
+    benefitsToken,
     payroll;
 
   before("Deploys Contracts", async function () {
     // Get Signers
-    [deployer, account1, account2, account3] = await ethers.getSigners();
+    [deployer, account1, account2, account3, account4, account5] =
+      await ethers.getSigners();
 
     // Deploy Token Contract
-    const EmployeeToken = await ethers.getContractFactory("EmployeeToken");
-    token = await EmployeeToken.deploy();
-    await token.deployed();
-    console.log("EmployeeToken deployed at:", token.address);
+    const BenefitsToken = await ethers.getContractFactory("BenefitsToken");
+    benefitsToken = await BenefitsToken.deploy();
+    await benefitsToken.deployed();
+    console.log("BenefitsToken deployed at:", benefitsToken.address);
 
     // Deploy Payroll Contract
     const Payroll = await ethers.getContractFactory("EmployeePayroll");
@@ -30,12 +32,12 @@ describe("Employees", async function () {
 
     // Deploy Employee Contract
     const Employee = await ethers.getContractFactory("Employees");
-    employees = await Employee.deploy(token.address, payroll.address);
+    employees = await Employee.deploy(benefitsToken.address, payroll.address);
     await employees.deployed();
     console.log("Employees deployed at:", employees.address);
 
     // Update Contract Address
-    await token.updateEmployeeContract(employees.address);
+    await benefitsToken.updateEmployeeContract(employees.address);
     await payroll.updateEmployeeContractAddress(employees.address);
     await payroll.updateEmployeeContract(employees.address);
   });
@@ -54,7 +56,6 @@ describe("Employees", async function () {
         1,
         111987,
         50000,
-        1,
         account3.address
       );
     });
@@ -66,13 +67,12 @@ describe("Employees", async function () {
       expect(employee1.rank).to.equal(1);
       expect(employee1.dateOfBirth).to.equal(111987);
       expect(employee1.salary).to.equal(50000);
-      expect(employee1.voteWeight).to.equal(1);
       expect(employee1.walletAddress).to.equal(account3.address);
       expect(employee1.active).to.equal(true);
     });
 
-    it("Should mint tokens to employee", async function () {
-      const balance = await token.balanceOf(account3.address);
+    it("Should mint benefitsTokens to employee", async function () {
+      const balance = await benefitsToken.balanceOf(account3.address);
       expect(balance).to.equal(100000);
     });
   });
@@ -82,9 +82,11 @@ describe("Employees", async function () {
       const employee1 = await employees.employees(0);
       expect(employee1.active).to.equal(false);
     });
-    it("Employee Burns tokens", async function () {
-      await token.connect(account3).burn(token.balanceOf(account3.address));
-      const balance = await token.balanceOf(account3.address);
+    it("Employee Burns benefitsTokens", async function () {
+      await benefitsToken
+        .connect(account3)
+        .burn(benefitsToken.balanceOf(account3.address));
+      const balance = await benefitsToken.balanceOf(account3.address);
       expect(balance).to.equal(0);
     });
     it("Revert if ID doesnt exist", async function () {
@@ -117,22 +119,21 @@ describe("Employees", async function () {
     });
   });
 
-  describe("Payroll", function () {
-    before("Should create new employee", async function () {
+  describe("Benefits Token", function () {
+    let employeeArray;
+    before("Creates new employees", async function () {
       await employees.addEmployee(
         "John Doe",
         1,
         111987,
         50000,
-        1,
-        account3.address
+        account2.address
       );
       await employees.addEmployee(
         "Joao Doe",
         1,
         111987,
         50000,
-        1,
         account3.address
       );
       await employees.addEmployee(
@@ -140,7 +141,62 @@ describe("Employees", async function () {
         1,
         111987,
         50000,
+        account4.address
+      );
+      await employees.addEmployee(
+        "Toby Doe",
         1,
+        111987,
+        50000,
+        account5.address
+      );
+      await employees.releaseEmployee(4);
+    });
+
+    it("John spends tokens on break", async function () {
+      await benefitsToken.connect(account2).buyExtraBreak();
+      expect(await benefitsToken.balanceOf(account2.address)).to.equal(90000);
+    });
+    it("John spends tokens on lunch", async function () {
+      await benefitsToken.connect(account2).buyLunch();
+      expect(await benefitsToken.balanceOf(account2.address)).to.equal(80000);
+    });
+    it("John tries to buy day off and TX reverts ", async function () {
+      await expect(
+        benefitsToken.connect(account2).buyDayOff()
+      ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+    });
+    it("Retrieves employee array from main contract", async function () {
+      employeeArray = await employees.getActiveEmployees();
+      expect(typeof employeeArray).to.equal("object");
+    });
+    it("Replenishes tokens to all active employees", async function () {
+      await employees.replenishEmployeeTokens();
+      expect(await benefitsToken.balanceOf(account2.address)).to.equal(100000);
+    });
+  });
+
+  /* describe("Payroll", function () {
+    before("Should create new employee", async function () {
+      await employees.addEmployee(
+        "John Doe",
+        1,
+        111987,
+        50000,
+        account3.address
+      );
+      await employees.addEmployee(
+        "Joao Doe",
+        1,
+        111987,
+        50000,
+        account3.address
+      );
+      await employees.addEmployee(
+        "Jay Doe",
+        1,
+        111987,
+        50000,
         account3.address
       );
       await employees.addEmployee(
@@ -148,7 +204,6 @@ describe("Employees", async function () {
         1,
         111987,
         50000,
-        1,
         account3.address
       );
       await employees.releaseEmployee(4);
@@ -157,5 +212,5 @@ describe("Employees", async function () {
       const emp = await employees.getActiveEmployees();
       console.log(emp);
     });
-  });
+  }); */
 });

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./EmployeeToken.sol";
+import "./BenefitsToken.sol";
 import "./EmployeePayroll.sol";
 
 contract Employees is Ownable {
-    EmployeeToken public EMP;
+    BenefitsToken public BEN;
     EmployeePayroll public payroll;
     uint256 public employeeCounter;
 
@@ -15,7 +15,6 @@ contract Employees is Ownable {
         uint256 rank;
         uint256 dateOfBirth;
         uint256 salary;
-        uint256 voteWeight;
         address walletAddress;
         bool active;
     }
@@ -28,7 +27,6 @@ contract Employees is Ownable {
         uint256 _rank,
         uint256 _dob,
         uint256 _salary,
-        uint256 _vWeight,
         address indexed _wallet
     );
 
@@ -37,12 +35,13 @@ contract Employees is Ownable {
         uint256 _rank,
         uint256 _dob,
         uint256 _salary,
-        uint256 _vWeight,
         address indexed _wallet
     );
 
-    constructor(address _EMP, address _payroll) {
-        EMP = EmployeeToken(_EMP);
+    event AssignRank(uint256 _employeeID, uint256 _rank);
+
+    constructor(address _BEN, address _payroll) {
+        BEN = BenefitsToken(_BEN);
         payroll = EmployeePayroll(_payroll);
         isAdmin[msg.sender] = true;
     }
@@ -53,7 +52,6 @@ contract Employees is Ownable {
         uint256 _rank,
         uint256 _dob,
         uint256 _salary,
-        uint256 _vWeight,
         address _wallet
     ) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
@@ -62,7 +60,6 @@ contract Employees is Ownable {
         employee.rank = _rank;
         employee.dateOfBirth = _dob;
         employee.salary = _salary;
-        employee.voteWeight = _vWeight;
         employee.walletAddress = _wallet;
         employee.active = true;
 
@@ -70,9 +67,9 @@ contract Employees is Ownable {
             employeeCounter++;
         }
 
-        EMP.mint(employee.walletAddress, employee.rank);
+        BEN.mint(employee.walletAddress, employee.rank);
 
-        emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _vWeight, _wallet);
+        emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _wallet);
     }
 
     // Delete Employee
@@ -87,9 +84,12 @@ contract Employees is Ownable {
             employee.rank,
             employee.dateOfBirth,
             employee.salary,
-            employee.voteWeight,
             employee.walletAddress
         );
+
+        unchecked {
+            employeeCounter--;
+        }
     }
 
     // Assign Role
@@ -98,20 +98,40 @@ contract Employees is Ownable {
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         employee.rank = _rank;
+
+        emit AssignRank(_employeeId, _rank);
     }
 
     function getActiveEmployees() public view returns (Employee[] memory) {
         // Get all active employees
         Employee[] memory activeEmployeeArray = new Employee[](employeeCounter);
-         for (uint256 i = 1; i < employeeCounter; i++) {
+        for (uint256 i; i < employeeCounter; i++) {
             Employee memory employeeLoop = getEmployee(i);
             if (employeeLoop.active) {
                 activeEmployeeArray[i] = employeeLoop;
-            } 
+            }
         }
         return activeEmployeeArray;
 
         // call mint contract to pay
+    }
+
+    function replenishEmployeeTokens() public {
+        Employee[] memory activeEmployeesArr = getActiveEmployees();
+        for (uint i; i < activeEmployeesArr.length; i++) {
+            uint256 tokenBalance = BEN.balanceOf(
+                activeEmployeesArr[i].walletAddress
+            );
+            uint256 tokensForRank = BEN.getAmountToRank(
+                activeEmployeesArr[i].rank
+            );
+            if (tokenBalance < tokensForRank) {
+                BEN.replenish(
+                    activeEmployeesArr[i].walletAddress,
+                    tokensForRank - tokenBalance
+                );
+            }
+        }
     }
 
     // Getter Functions
