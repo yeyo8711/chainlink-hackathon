@@ -1,4 +1,3 @@
-const hre = require("hardhat");
 const { ethers, hre } = require("hardhat");
 
 async function main() {
@@ -9,10 +8,10 @@ async function main() {
   const wallet5 = new ethers.Wallet.createRandom();
 
   // Deploy Token Contract
-  const EmployeeToken = await ethers.getContractFactory("EmployeeToken");
-  const token = await EmployeeToken.deploy();
+  const BenefitsToken = await ethers.getContractFactory("BenefitsToken");
+  const token = await BenefitsToken.deploy();
   await token.deployed();
-  console.log("EmployeeToken deployed at:", token.address);
+  console.log("BenefitsToken deployed at:", token.address);
 
   // Deploy Payroll Contract
   const Payroll = await ethers.getContractFactory("EmployeePayroll");
@@ -32,40 +31,7 @@ async function main() {
     await payroll.updateEmployeeContractAddress(employees.address);
     await payroll.updateEmployeeContract(employees.address);
   }, 10000);
-
-  setTimeout(async () => {
-    await employees.addEmployee(
-      "John Doe",
-      1,
-      27111987,
-      50000,
-      wallet1.address
-    );
-    await employees.addEmployee(
-      "Joao Doe",
-      1,
-      10091983,
-      50000,
-      wallet2.address
-    );
-    await employees.addEmployee("Jay Doe", 1, 25061994, 50000, wallet3.address);
-    await employees.addEmployee(
-      "Toby Doe",
-      1,
-      31101990,
-      50000,
-      wallet4.address
-    );
-    await employees.addEmployee(
-      "Lucas Doe",
-      1,
-      31101990,
-      50000,
-      wallet5.address
-    );
-  }, 20000);
 }
-
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main().catch((error) => {
