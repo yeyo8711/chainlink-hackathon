@@ -17,7 +17,6 @@ contract EmployeePayroll is ERC20, ERC20Burnable, Ownable {
         uint256 rank;
         uint256 dateOfBirth;
         uint256 salary;
-        uint256 voteWeight;
         address walletAddress;
         bool active;
     }

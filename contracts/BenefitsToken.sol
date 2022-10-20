@@ -105,7 +105,7 @@ contract BenefitsToken is ERC20, ERC20Burnable, Ownable {
     }
 
     // Getters
-    function getAmountToRank(uint256 _rank) public returns (uint256) {
+    function getAmountToRank(uint256 _rank) public pure returns (uint256) {
         if (_rank == 1) {
             return rank1Amount;
         } else if (_rank == 2) {
