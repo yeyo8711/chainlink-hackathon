@@ -26,10 +26,15 @@ contract EmployeePayroll is ERC20, ERC20Burnable, Ownable {
         _;
     }
 
-    constructor() ERC20("EmployeeToken", "EMP") {
+    constructor() ERC20("EmployeeUSD", "EMPUSD") {
         isAdmin[msg.sender] = true;
     }
 
+    function mint(address _to, uint256 _amount) public onlyEmployeeContract {
+        _mint(_to, _amount);
+    }
+
+    /*---------- SETTERS AND GETTERS -------------*/
     function updateEmployeeContractAddress(address _address) public {
         require(isAdmin[msg.sender]);
         employeeContractAddress = _address;
@@ -39,12 +44,7 @@ contract EmployeePayroll is ERC20, ERC20Burnable, Ownable {
         employeeContract = Employees(_address);
     }
 
-    function getACtiveEmployees() public view {
-        //Employee[] memory activeEmployeeArr = employeeArray;
-        employeeContract.getEmployee(0);
-    }
-
-    function mint(address _to, uint256 _amount) public {
-        _mint(_to, _amount);
+    function setAdmin(address _address, bool _isAdmin) external onlyOwner {
+        isAdmin[_address] = _isAdmin;
     }
 }

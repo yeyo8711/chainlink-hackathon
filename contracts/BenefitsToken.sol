@@ -10,6 +10,15 @@ contract BenefitsToken is ERC20, ERC20Burnable, Ownable {
     Employees employeeContract;
     address employeeContractAddress;
 
+    struct iEmployee {
+        string name;
+        uint256 rank;
+        uint256 dateOfBirth;
+        uint256 salary;
+        address walletAddress;
+        bool active;
+    }
+
     uint256 public immutable rank1Amount = 100_000;
     uint256 public immutable rank2Amount = 150_000;
     uint256 public immutable rank3Amount = 200_000;

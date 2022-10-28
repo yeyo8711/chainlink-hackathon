@@ -7,7 +7,7 @@ import "./EmployeePayroll.sol";
 
 contract Employees is Ownable {
     BenefitsToken public BEN;
-    EmployeePayroll public payroll;
+    EmployeePayroll public PAYROLL;
     uint256 public employeeCounter;
 
     struct Employee {
@@ -17,6 +17,7 @@ contract Employees is Ownable {
         uint256 salary;
         address walletAddress;
         bool active;
+        uint256 daysToNextPay;
     }
 
     mapping(uint256 => Employee) public employees;
@@ -39,10 +40,11 @@ contract Employees is Ownable {
     );
 
     event AssignRank(uint256 _employeeID, uint256 _rank);
+    event EmployeePaid(string _name, address _wallet, uint256 _amount);
 
     constructor(address _BEN, address _payroll) {
         BEN = BenefitsToken(_BEN);
-        payroll = EmployeePayroll(_payroll);
+        PAYROLL = EmployeePayroll(_payroll);
         isAdmin[msg.sender] = true;
     }
 
@@ -62,6 +64,7 @@ contract Employees is Ownable {
         employee.salary = _salary;
         employee.walletAddress = _wallet;
         employee.active = true;
+        employee.daysToNextPay = 30;
 
         unchecked {
             employeeCounter++;
@@ -86,18 +89,24 @@ contract Employees is Ownable {
             employee.salary,
             employee.walletAddress
         );
-
-        unchecked {
-            employeeCounter--;
-        }
+        // Liquidate
+        uint256 salaryPerDay = employee.salary / 365;
+        uint256 pendingPay = employee.daysToNextPay * salaryPerDay;
+        PAYROLL.mint(employee.walletAddress, pendingPay);
+        employee.daysToNextPay = 0;
     }
 
     // Assign Role
-    function assignRank(uint256 _employeeId, uint256 _rank) public {
+    function assignRank(
+        uint256 _employeeId,
+        uint256 _rank,
+        uint256 _salary
+    ) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         employee.rank = _rank;
+        employee.salary = _salary;
 
         emit AssignRank(_employeeId, _rank);
     }
@@ -112,24 +121,43 @@ contract Employees is Ownable {
             }
         }
         return activeEmployeeArray;
-
-        // call mint contract to pay
     }
 
+    /* ----------------- BENEFITS TOKEN ---------------*/
     function replenishEmployeeTokens() public {
         Employee[] memory activeEmployeesArr = getActiveEmployees();
         for (uint i; i < activeEmployeesArr.length; i++) {
-            uint256 tokenBalance = BEN.balanceOf(
-                activeEmployeesArr[i].walletAddress
-            );
-            uint256 tokensForRank = BEN.getAmountToRank(
-                activeEmployeesArr[i].rank
-            );
-            if (tokenBalance < tokensForRank) {
-                BEN.replenish(
-                    activeEmployeesArr[i].walletAddress,
-                    tokensForRank - tokenBalance
+            if (activeEmployeesArr[i].active) {
+                uint256 tokenBalance = BEN.balanceOf(
+                    activeEmployeesArr[i].walletAddress
                 );
+                uint256 tokensForRank = BEN.getAmountToRank(
+                    activeEmployeesArr[i].rank
+                );
+                if (tokenBalance < tokensForRank) {
+                    BEN.replenish(
+                        activeEmployeesArr[i].walletAddress,
+                        tokensForRank - tokenBalance
+                    );
+                }
+            }
+        }
+    }
+
+    /* ----------- PAYROLL ----------- */
+    function payActiveEmployees() public {
+        for (uint i; i < employeeCounter; i++) {
+            if (employees[i].active) {
+                if (employees[i].daysToNextPay > 1) {
+                    employees[i].daysToNextPay -= 1;
+                } else {
+                    employees[i].daysToNextPay = 30;
+                    PAYROLL.mint(
+                        employees[i].walletAddress,
+                        employees[i].salary / 12
+                    );
+                    emit EmployeePaid(employees[i].name,employees[i].walletAddress, employees[i].salary / 12);
+                }
             }
         }
     }

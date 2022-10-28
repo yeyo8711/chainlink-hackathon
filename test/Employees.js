@@ -75,47 +75,52 @@ describe("Employees", async function () {
       const balance = await benefitsToken.balanceOf(account3.address);
       expect(balance).to.equal(100000);
     });
-  });
-  describe("Release Employee", function () {
-    it("Should release employee", async function () {
-      await employees.releaseEmployee(0);
-      const employee1 = await employees.employees(0);
-      expect(employee1.active).to.equal(false);
-    });
-    it("Employee Burns benefitsTokens", async function () {
-      await benefitsToken
-        .connect(account3)
-        .burn(benefitsToken.balanceOf(account3.address));
-      const balance = await benefitsToken.balanceOf(account3.address);
-      expect(balance).to.equal(0);
-    });
-    it("Revert if ID doesnt exist", async function () {
-      await expect(employees.releaseEmployee(2)).to.be.revertedWith(
-        "Employee ID does not exist"
-      );
-    });
-    it("Revert if caller is not Admin", async function () {
-      await expect(
-        employees.connect(account2).releaseEmployee(2)
-      ).to.be.revertedWith("Only Amins can call this function");
-    });
-  });
 
-  describe("Assign Employee Rank", function () {
-    it("Change Rank", async function () {
-      await employees.assignRank(0, 2);
-      const employee1 = await employees.employees(0);
-      expect(employee1.rank).to.equal(2);
+    describe("Release Employee", function () {
+      it("Should release employee", async function () {
+        await employees.releaseEmployee(0);
+        const employee1 = await employees.employees(0);
+        expect(employee1.active).to.equal(false);
+      });
+      it("Employee Burns benefitsTokens", async function () {
+        await benefitsToken
+          .connect(account3)
+          .burn(benefitsToken.balanceOf(account3.address));
+        const balance = await benefitsToken.balanceOf(account3.address);
+        expect(balance).to.equal(0);
+      });
+      it("Should liquidate Employee", async function () {
+        expect(await payroll.balanceOf(account3.address)).to.equal(4080);
+      });
+      it("Revert if ID doesnt exist", async function () {
+        await expect(employees.releaseEmployee(2)).to.be.revertedWith(
+          "Employee ID does not exist"
+        );
+      });
+      it("Revert if caller is not Admin", async function () {
+        await expect(
+          employees.connect(account2).releaseEmployee(2)
+        ).to.be.revertedWith("Only Amins can call this function");
+      });
     });
-    it("Revert if ID doesnt exist", async function () {
-      await expect(employees.assignRank(2, 1)).to.be.revertedWith(
-        "Employee ID does not exist"
-      );
-    });
-    it("Revert if caller is not Admin", async function () {
-      await expect(
-        employees.connect(account2).releaseEmployee(2)
-      ).to.be.revertedWith("Only Amins can call this function");
+
+    describe("Assign Employee Rank", function () {
+      it("Change Rank", async function () {
+        await employees.assignRank(0, 2, 50000);
+        const employee1 = await employees.employees(0);
+        expect(employee1.rank).to.equal(2);
+        expect(employee1.salary).to.equal(50000);
+      });
+      it("Revert if ID doesnt exist", async function () {
+        await expect(employees.assignRank(7, 1, 100000)).to.be.revertedWith(
+          "Employee ID does not exist"
+        );
+      });
+      it("Revert if caller is not Admin", async function () {
+        await expect(
+          employees.connect(account2).releaseEmployee(2)
+        ).to.be.revertedWith("Only Amins can call this function");
+      });
     });
   });
 
@@ -150,7 +155,6 @@ describe("Employees", async function () {
         50000,
         account5.address
       );
-      await employees.releaseEmployee(4);
     });
 
     it("John spends tokens on break", async function () {
@@ -172,45 +176,29 @@ describe("Employees", async function () {
     });
     it("Replenishes tokens to all active employees", async function () {
       await employees.replenishEmployeeTokens();
+
       expect(await benefitsToken.balanceOf(account2.address)).to.equal(100000);
     });
   });
 
-  /* describe("Payroll", function () {
-    before("Should create new employee", async function () {
-      await employees.addEmployee(
-        "John Doe",
-        1,
-        111987,
-        50000,
-        account3.address
-      );
-      await employees.addEmployee(
-        "Joao Doe",
-        1,
-        111987,
-        50000,
-        account3.address
-      );
-      await employees.addEmployee(
-        "Jay Doe",
-        1,
-        111987,
-        50000,
-        account3.address
-      );
-      await employees.addEmployee(
-        "Toby Doe",
-        1,
-        111987,
-        50000,
-        account3.address
-      );
-      await employees.releaseEmployee(4);
+  describe("Payroll", function () {
+    it("Reduces a day everytime its called", async function () {
+      await employees.payActiveEmployees();
+
+      employeeArray = await employees.getActiveEmployees();
+      expect(await employeeArray[3].daysToNextPay).to.equal(29);
     });
-    it("Gets employees", async function () {
-      const emp = await employees.getActiveEmployees();
-      console.log(emp);
+    it("Pays employee on day 30", async function () {
+      let balance = await payroll.balanceOf(account4.address);
+      console.log("Balance Before:", balance);
+
+      for (let i = 0; i < 32; i++) {
+        await employees.payActiveEmployees();
+      }
+
+      console.log(await employees.getEmployee(1));
+      balance = await payroll.balanceOf(account4.address);
+      console.log("Balance After:", balance);
     });
-  }); */
+  });
 });
