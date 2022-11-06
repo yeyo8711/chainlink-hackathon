@@ -64,7 +64,7 @@ contract Employees is Ownable {
         address _wallet
     ) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
-        require(_rank > 0 && _rank < 4, "Rank doesnt exist");
+        require(_rank > 0 && _rank < 5, "Rank doesnt exist");
         Employee storage employee = employees[employeeCounter];
         employee.name = _name;
         employee.rank = _rank;
