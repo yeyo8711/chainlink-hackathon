@@ -4,11 +4,13 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BenefitsToken.sol";
 import "./EmployeePayroll.sol";
+import "./PayrollioNFT.sol";
 
 contract Employees is Ownable {
     BenefitsToken public BEN;
     EmployeePayroll public PAYROLL;
     uint256 public employeeCounter;
+    PayrollioNFT public NFT;
 
     struct Employee {
         string name;
@@ -42,9 +44,14 @@ contract Employees is Ownable {
     event AssignRank(uint256 _employeeID, uint256 _rank);
     event EmployeePaid(string _name, address _wallet, uint256 _amount);
 
-    constructor(address _BEN, address _payroll) {
+    constructor(
+        address _BEN,
+        address _payroll,
+        address _nft
+    ) {
         BEN = BenefitsToken(_BEN);
         PAYROLL = EmployeePayroll(_payroll);
+        NFT = PayrollioNFT(_nft);
         isAdmin[msg.sender] = true;
     }
 
@@ -57,6 +64,7 @@ contract Employees is Ownable {
         address _wallet
     ) public {
         require(isAdmin[msg.sender], "Only Amins can call this function");
+        require(_rank > 0 && _rank < 4, "Rank doesnt exist");
         Employee storage employee = employees[employeeCounter];
         employee.name = _name;
         employee.rank = _rank;
@@ -64,13 +72,17 @@ contract Employees is Ownable {
         employee.salary = _salary;
         employee.walletAddress = _wallet;
         employee.active = true;
-        employee.daysToNextPay = 30;
+        employee.daysToNextPay = 2;
 
         unchecked {
             employeeCounter++;
         }
 
+        //Mint NFTs and Benefit Tokens
         BEN.mint(employee.walletAddress, employee.rank);
+        for (uint i = 1; i <= _rank; i++) {
+            NFT.mint(employee.walletAddress, i, 1, "");
+        }
 
         emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _wallet);
     }
@@ -94,6 +106,10 @@ contract Employees is Ownable {
         uint256 pendingPay = employee.daysToNextPay * salaryPerDay;
         PAYROLL.mint(employee.walletAddress, pendingPay);
         employee.daysToNextPay = 0;
+        // Burn NFTS
+        for (uint i = 1; i <= employee.rank; i++) {
+            NFT.burn(employee.walletAddress, i, 1);
+        }
     }
 
     // Assign Role
@@ -156,7 +172,11 @@ contract Employees is Ownable {
                         employees[i].walletAddress,
                         employees[i].salary / 12
                     );
-                    emit EmployeePaid(employees[i].name,employees[i].walletAddress, employees[i].salary / 12);
+                    emit EmployeePaid(
+                        employees[i].name,
+                        employees[i].walletAddress,
+                        employees[i].salary / 12
+                    );
                 }
             }
         }

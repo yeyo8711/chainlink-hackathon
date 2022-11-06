@@ -189,16 +189,10 @@ describe("Employees", async function () {
       expect(await employeeArray[3].daysToNextPay).to.equal(29);
     });
     it("Pays employee on day 30", async function () {
-      let balance = await payroll.balanceOf(account4.address);
-      console.log("Balance Before:", balance);
-
       for (let i = 0; i < 32; i++) {
         await employees.payActiveEmployees();
       }
-
-      console.log(await employees.getEmployee(1));
-      balance = await payroll.balanceOf(account4.address);
-      console.log("Balance After:", balance);
+      expect(await payroll.balanceOf(account4.address)).to.equal(4166);
     });
   });
 });

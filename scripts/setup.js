@@ -17,55 +17,45 @@ const wallet4 = new ethers.Wallet.createRandom();
 const wallet5 = new ethers.Wallet.createRandom();
 
 const main = async () => {
-  setTimeout(async () => {
-    await employeeContract.addEmployee(
-      "John Doe",
-      1,
-      27111987,
-      50000,
-      wallet1.address
-    );
-  }, 3000);
+  await employeeContract.addEmployee(
+    "John Doe",
+    1,
+    27111987,
+    50000,
+    wallet1.address
+  );
 
-  setTimeout(async () => {
-    await employeeContract.addEmployee(
-      "Joao Doe",
-      1,
-      10091983,
-      50000,
-      wallet2.address
-    );
-  }, 7000);
+  await employeeContract.addEmployee(
+    "Joao Doe",
+    1,
+    10091983,
+    50000,
+    wallet2.address
+  );
 
-  setTimeout(async () => {
-    await employeeContract.addEmployee(
-      "Jay Doe",
-      1,
-      25061994,
-      50000,
-      wallet3.address
-    );
-  }, 14000);
+  await employeeContract.addEmployee(
+    "Jay Doe",
+    1,
+    25061994,
+    50000,
+    wallet3.address
+  );
 
-  setTimeout(async () => {
-    await employeeContract.addEmployee(
-      "Toby Doe",
-      1,
-      31101990,
-      50000,
-      wallet4.address
-    );
-  }, 20000);
+  await employeeContract.addEmployee(
+    "Toby Doe",
+    1,
+    31101990,
+    50000,
+    wallet4.address
+  );
 
-  setTimeout(async () => {
-    await employeeContract.addEmployee(
-      "Lucas Doe",
-      1,
-      31101990,
-      50000,
-      wallet5.address
-    );
-  }, 25000);
+  await employeeContract.addEmployee(
+    "Lucas Doe",
+    1,
+    31101990,
+    50000,
+    wallet5.address
+  );
 };
 
 main().catch((error) => {
