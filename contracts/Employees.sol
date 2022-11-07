@@ -72,7 +72,7 @@ contract Employees is Ownable {
         employee.salary = _salary;
         employee.walletAddress = _wallet;
         employee.active = true;
-        employee.daysToNextPay = 2;
+        employee.daysToNextPay = 30;
 
         unchecked {
             employeeCounter++;
@@ -80,9 +80,8 @@ contract Employees is Ownable {
 
         //Mint NFTs and Benefit Tokens
         BEN.mint(employee.walletAddress, employee.rank);
-        for (uint i = 1; i <= _rank; i++) {
-            NFT.mint(employee.walletAddress, i, 1, "");
-        }
+
+        NFT.mint(employee.walletAddress, _rank, 1, "");
 
         emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _wallet);
     }
@@ -121,6 +120,7 @@ contract Employees is Ownable {
         require(isAdmin[msg.sender], "Only Amins can call this function");
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
+        require(_rank > employee.rank, "Cannot demote employee");
         employee.rank = _rank;
         employee.salary = _salary;
 

@@ -11,7 +11,8 @@ describe("Employees", async function () {
     account5,
     employees,
     benefitsToken,
-    payroll;
+    payroll,
+    payrollioNFT;
 
   before("Deploys Contracts", async function () {
     // Get Signers
@@ -24,6 +25,12 @@ describe("Employees", async function () {
     await benefitsToken.deployed();
     console.log("BenefitsToken deployed at:", benefitsToken.address);
 
+    // Deploy NFT Contract
+    const PayrollioNFT = await ethers.getContractFactory("PayrollioNFT");
+    payrollioNFT = await PayrollioNFT.deploy();
+    await payrollioNFT.deployed();
+    console.log("NFTCotnract deployed at:", payrollioNFT.address);
+
     // Deploy Payroll Contract
     const Payroll = await ethers.getContractFactory("EmployeePayroll");
     payroll = await Payroll.deploy();
@@ -32,7 +39,11 @@ describe("Employees", async function () {
 
     // Deploy Employee Contract
     const Employee = await ethers.getContractFactory("Employees");
-    employees = await Employee.deploy(benefitsToken.address, payroll.address);
+    employees = await Employee.deploy(
+      benefitsToken.address,
+      payroll.address,
+      payrollioNFT.address
+    );
     await employees.deployed();
     console.log("Employees deployed at:", employees.address);
 
@@ -40,6 +51,7 @@ describe("Employees", async function () {
     await benefitsToken.updateEmployeeContract(employees.address);
     await payroll.updateEmployeeContractAddress(employees.address);
     await payroll.updateEmployeeContract(employees.address);
+    await payrollioNFT.transferOwnership(employees.address);
   });
 
   describe("Deployed with correct owner", function () {
@@ -193,6 +205,15 @@ describe("Employees", async function () {
         await employees.payActiveEmployees();
       }
       expect(await payroll.balanceOf(account4.address)).to.equal(4166);
+    });
+  });
+
+  describe("NFTs", function () {
+    it("Mints NFTs to newly added employee", async function () {
+      expect(await payrollioNFT.balanceOf(account2.address, 1)).to.equal(1);
+    });
+    it("Mints NFT when employee is promoted", async function () {
+      await employees.assignRank();
     });
   });
 });
