@@ -1,4 +1,4 @@
-const { ethers, hre } = require("hardhat");
+const { ethers, hre, hardhatArguments } = require("hardhat");
 
 async function main() {
   // Deploy Token Contract
@@ -33,18 +33,86 @@ async function main() {
   console.log("ALL CONTRACTS DEPLOYED");
 
   // Update Contract Address
-  setTimeout(async () => {
-    console.log("Updating Contract Address...");
-    await token.updateEmployeeContract(employees.address);
-    await payroll.updateEmployeeContractAddress(employees.address);
-    await payroll.updateEmployeeContract(employees.address);
-  }, 10000);
+
+  console.log("Updating Contract Address...");
+  const tx1 = await token.updateEmployeeContract(employees.address);
+  await tx1.wait();
+  const tx2 = await payroll.updateEmployeeContractAddress(employees.address);
+  await tx2.wait();
+  const tx3 = await payroll.updateEmployeeContract(employees.address);
+  await tx3.wait();
+  console.log("...Done!");
 
   // Transfer Ownership Address
-  setTimeout(async () => {
-    console.log("Transfering Ownership...");
-    await payrollioNFT.transferOwnership(employees.address);
-  }, 15000);
+
+  console.log("Transfering Ownership...");
+  const tx4 = await payrollioNFT.transferOwnership(employees.address);
+  await tx4.wait();
+  console.log("...Done!");
+
+  // Add Employees
+  const wallet1 = new ethers.Wallet.createRandom();
+  const wallet2 = new ethers.Wallet.createRandom();
+  const wallet3 = new ethers.Wallet.createRandom();
+  const wallet4 = new ethers.Wallet.createRandom();
+  const wallet5 = new ethers.Wallet.createRandom();
+
+  const tx5 = await employeeContract.addEmployee(
+    "John Doe",
+    1,
+    27111987,
+    50000,
+    wallet1.address
+  );
+  await tx5.wait();
+  console.log("Employee 1 added.");
+
+  const tx6 = await employeeContract.addEmployee(
+    "Joao Doe",
+    2,
+    10091983,
+    50000,
+    wallet2.address
+  );
+  await tx6.wait();
+  console.log("Employee 2 added.");
+
+  const tx7 = await employeeContract.addEmployee(
+    "Jay Doe",
+    3,
+    25061994,
+    50000,
+    wallet3.address
+  );
+  await tx7.wait();
+  console.log("Employee 3 added.");
+
+  const tx8 = await employeeContract.addEmployee(
+    "Toby Doe",
+    4,
+    31101990,
+    50000,
+    wallet4.address
+  );
+  await tx8.wait();
+  console.log("Employee 4 added.");
+
+  const tx9 = await employeeContract.addEmployee(
+    "Lucas Doe",
+    1,
+    31101990,
+    50000,
+    wallet5.address
+  );
+  await tx9.wait();
+  console.log("Employee 5 added.");
+
+  // Add Thoby as Admin
+  const tx10 = await employeeContract.setAdmin(
+    "0xf7500C20F5063717f0933B0596C3B95042a5773E",
+    true
+  );
+  await tx10.wait();
 }
 
 main().catch((error) => {
@@ -53,10 +121,10 @@ main().catch((error) => {
 });
 
 /*
-BenefitsToken deployed at: 0xcE2c34e8028fD6239418Da3c9a9f66D13a66c92E
-NFTCotnract deployed at: 0x0BD7F7a711757939F24dD1F14c8d205C7B69D895
-Payroll deployed at: 0xFe69d261394744545faD3bDe5010107153b4a326
-Employees deployed at: 0x967a1f0D4E755E51CdB4D09aF67b1715CC208C8B
+BenefitsToken deployed at: 0xf35F4194Fb0d5F88CEF4777f8D43Df8275AC4645
+NFTCotnract deployed at: 0x66353b36b05b4e9c684dAc319cB032514934A0D5
+Payroll deployed at: 0xFc89047B2A8ABe191957093a0c3Efc6eB8B2d266
+Employees deployed at: 0xF9D2726FfAd67f8000b816aa0DCD4ae17B931979
 
 Wallet1: 0x206b5bb730277Ac3ccF247466581220Be262644f
 Wallet2: 0x719cf7503838321980387002c16eFDC9BDB278Da

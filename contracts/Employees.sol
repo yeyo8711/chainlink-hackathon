@@ -105,9 +105,7 @@ contract Employees is Ownable {
         //Mint NFTs and Benefit Tokens
         BEN.mint(employee.walletAddress, employee.rank);
 
-        
         NFT.mint(employee.walletAddress, _rank);
-       
 
         emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _wallet);
     }
@@ -117,6 +115,7 @@ contract Employees is Ownable {
         require(isAdmin[msg.sender], "Only Amins can call this function");
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
+        require(employee.active, "Employee already released");
         employee.active = false;
 
         CompanyData storage data = companyData[0];
@@ -150,7 +149,7 @@ contract Employees is Ownable {
                 NFT.burn(employee.walletAddress, i, 1);
         }
         // Mint Ex-Employee NFT
-        NFT.mint(employee.walletAddress, 5);
+        NFT.mint(employee.walletAddress, 6);
     }
 
     // Assign Role

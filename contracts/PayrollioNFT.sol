@@ -8,11 +8,10 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
-    uint256[] public tokens;
-    mapping(address => mapping(uint => bool)) public addressToToken;
+    mapping(address => mapping(uint => bool)) addressToToken;
 
     constructor()
-        ERC1155("/ipfs/QmdLiZ3UFbswiztTbxncUVLyH7kC3iTxqUm2MyExWX8HWU")
+        ERC1155("/ipfs/QmTkYo6s8kRHMZNRxk1dF8BUKr6UNrwKXKYu7Dd6fXgEQo")
     {}
 
     function uri(uint256 _tokenId)
@@ -24,7 +23,7 @@ contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         return
             string(
                 abi.encodePacked(
-                    "https://aqua-just-grouse-834.mypinata.cloud/ipfs/QmdLiZ3UFbswiztTbxncUVLyH7kC3iTxqUm2MyExWX8HWU/",
+                    "https://aqua-just-grouse-834.mypinata.cloud/ipfs/QmTkYo6s8kRHMZNRxk1dF8BUKr6UNrwKXKYu7Dd6fXgEQo/",
                     Strings.toString(_tokenId),
                     ".json"
                 )
