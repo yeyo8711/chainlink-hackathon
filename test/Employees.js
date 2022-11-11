@@ -9,6 +9,7 @@ describe("Employees", async function () {
     account3,
     account4,
     account5,
+    account6,
     employees,
     benefitsToken,
     payroll,
@@ -16,7 +17,7 @@ describe("Employees", async function () {
 
   before("Deploys Contracts", async function () {
     // Get Signers
-    [deployer, account1, account2, account3, account4, account5] =
+    [deployer, account1, account2, account3, account4, account5, account6] =
       await ethers.getSigners();
 
     // Deploy Token Contract
@@ -155,14 +156,14 @@ describe("Employees", async function () {
       );
       await employees.addEmployee(
         "Jay Doe",
-        1,
+        4,
         111987,
         50000,
         account4.address
       );
       await employees.addEmployee(
         "Toby Doe",
-        1,
+        4,
         111987,
         50000,
         account5.address
@@ -213,7 +214,28 @@ describe("Employees", async function () {
       expect(await payrollioNFT.balanceOf(account2.address, 1)).to.equal(1);
     });
     it("Mints NFT when employee is promoted", async function () {
-      await employees.assignRank();
+      await employees.assignRank(2, 4, "150000");
+      expect(await payrollioNFT.balanceOf(account3.address, 4)).to.equal(1);
+    });
+    it("Burns NFTs when employee is released", async function () {
+      await payrollioNFT
+        .connect(account3)
+        .setApprovalForAll(employees.address, true);
+      await employees.releaseEmployee(4);
+      expect(await payrollioNFT.balanceOf(account3.address, 3)).to.equal(0);
+    });
+    it("Should return array of NFTs by account", async function () {
+      await employees.addEmployee(
+        "Jesus Christ",
+        1,
+        27111987,
+        50000,
+        account6.address
+      );
+    });
+    it("Should mint an ex-employee NFT", async function () {
+      await employees.releaseEmployee(5);
+      console.log(await payrollioNFT.getAccountsNFTs(account6.address));
     });
   });
 });

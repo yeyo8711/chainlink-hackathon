@@ -9,8 +9,18 @@ import "./PayrollioNFT.sol";
 contract Employees is Ownable {
     BenefitsToken public BEN;
     EmployeePayroll public PAYROLL;
-    uint256 public employeeCounter;
+    uint256 public employeeCounter = 0;
     PayrollioNFT public NFT;
+
+    struct CompanyData {
+        uint256 totalEmployees;
+        uint256 activeEmployees;
+        uint256 inactiveEmployees;
+        uint256 rank1Employees;
+        uint256 rank2Employees;
+        uint256 rank3Employees;
+        uint256 rank4Employees;
+    }
 
     struct Employee {
         string name;
@@ -22,6 +32,7 @@ contract Employees is Ownable {
         uint256 daysToNextPay;
     }
 
+    CompanyData[1] public companyData;
     mapping(uint256 => Employee) public employees;
     mapping(address => bool) public isAdmin;
 
@@ -74,6 +85,19 @@ contract Employees is Ownable {
         employee.active = true;
         employee.daysToNextPay = 30;
 
+        CompanyData storage data = companyData[0];
+        data.totalEmployees += 1;
+        data.activeEmployees += 1;
+        if (_rank == 1) {
+            data.rank1Employees += 1;
+        } else if (_rank == 2) {
+            data.rank2Employees += 1;
+        } else if (_rank == 3) {
+            data.rank3Employees += 1;
+        } else {
+            data.rank4Employees += 1;
+        }
+
         unchecked {
             employeeCounter++;
         }
@@ -81,7 +105,9 @@ contract Employees is Ownable {
         //Mint NFTs and Benefit Tokens
         BEN.mint(employee.walletAddress, employee.rank);
 
-        NFT.mint(employee.walletAddress, _rank, 1, "");
+        
+        NFT.mint(employee.walletAddress, _rank);
+       
 
         emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _wallet);
     }
@@ -92,6 +118,19 @@ contract Employees is Ownable {
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         employee.active = false;
+
+        CompanyData storage data = companyData[0];
+        data.totalEmployees += 1;
+        data.activeEmployees += 1;
+        if (employee.rank == 1) {
+            data.rank1Employees -= 1;
+        } else if (employee.rank == 2) {
+            data.rank2Employees -= 1;
+        } else if (employee.rank == 3) {
+            data.rank3Employees -= 1;
+        } else {
+            data.rank4Employees -= 1;
+        }
 
         emit EmpoloyeeReleased(
             employee.name,
@@ -106,9 +145,12 @@ contract Employees is Ownable {
         PAYROLL.mint(employee.walletAddress, pendingPay);
         employee.daysToNextPay = 0;
         // Burn NFTS
-        for (uint i = 1; i <= employee.rank; i++) {
-            NFT.burn(employee.walletAddress, i, 1);
+        for (uint i; i < employee.rank + 1; i++) {
+            if (NFT.balanceOf(employee.walletAddress, i) > 0)
+                NFT.burn(employee.walletAddress, i, 1);
         }
+        // Mint Ex-Employee NFT
+        NFT.mint(employee.walletAddress, 5);
     }
 
     // Assign Role
@@ -121,22 +163,13 @@ contract Employees is Ownable {
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         require(_rank > employee.rank, "Cannot demote employee");
+        require(_rank < 5, "This rank doenst exist");
         employee.rank = _rank;
         employee.salary = _salary;
 
-        emit AssignRank(_employeeId, _rank);
-    }
+        NFT.mint(employee.walletAddress, _rank);
 
-    function getActiveEmployees() public view returns (Employee[] memory) {
-        // Get all active employees
-        Employee[] memory activeEmployeeArray = new Employee[](employeeCounter);
-        for (uint256 i; i < employeeCounter; i++) {
-            Employee memory employeeLoop = getEmployee(i);
-            if (employeeLoop.active) {
-                activeEmployeeArray[i] = employeeLoop;
-            }
-        }
-        return activeEmployeeArray;
+        emit AssignRank(_employeeId, _rank);
     }
 
     /* ----------------- BENEFITS TOKEN ---------------*/
@@ -190,6 +223,19 @@ contract Employees is Ownable {
     {
         Employee storage employee = employees[_employeeId];
         return employee;
+    }
+
+    function getActiveEmployees() public view returns (Employee[] memory) {
+        Employee[] memory activeEmployeeArray = new Employee[](employeeCounter);
+
+        for (uint256 i; i < employeeCounter; i++) {
+            Employee memory employeeLoop = getEmployee(i);
+            if (employeeLoop.active) {
+                activeEmployeeArray[i] = employeeLoop;
+            }
+        }
+
+        return activeEmployeeArray;
     }
 
     // Setter Functions

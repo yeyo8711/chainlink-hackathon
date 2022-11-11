@@ -8,8 +8,11 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
+    uint256[] public tokens;
+    mapping(address => mapping(uint => bool)) public addressToToken;
+
     constructor()
-        ERC1155("/ipfs/QmThYPaBUa8DFfJ2seBkseWLzJSLk1Ey7mtNnxphH4BEaS")
+        ERC1155("/ipfs/QmdLiZ3UFbswiztTbxncUVLyH7kC3iTxqUm2MyExWX8HWU")
     {}
 
     function uri(uint256 _tokenId)
@@ -21,7 +24,7 @@ contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         return
             string(
                 abi.encodePacked(
-                    "https://gateway.pinata.cloud/ipfs/QmThYPaBUa8DFfJ2seBkseWLzJSLk1Ey7mtNnxphH4BEaS/",
+                    "https://aqua-just-grouse-834.mypinata.cloud/ipfs/QmdLiZ3UFbswiztTbxncUVLyH7kC3iTxqUm2MyExWX8HWU/",
                     Strings.toString(_tokenId),
                     ".json"
                 )
@@ -32,17 +35,17 @@ contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
         _setURI(newuri);
     }
 
-    function mint(
-        address account,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public onlyOwner {
+    function mint(address account, uint256 id) public onlyOwner {
         require(
             balanceOf(account, id) < 1,
             "Cannot have more than one rank NFT"
         );
-        _mint(account, id, amount, data);
+        _mint(account, id, 1, "");
+        addressToToken[account][id] = true;
+    }
+
+    function mintEmployeeOfTheMonth(address account) public onlyOwner {
+        _mint(account, 5, 1, "");
     }
 
     function burn(
@@ -55,6 +58,7 @@ contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
             "You cannot burn your own NFT"
         );
         _burn(account, id, amount);
+        addressToToken[account][id] = false;
     }
 
     // The following functions are overrides required by Solidity.
@@ -72,5 +76,22 @@ contract PayrollioNFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
             "You cannot transfer your NFT to others"
         );
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    }
+
+    function getAccountsNFTs(address _address)
+        public
+        view
+        returns (uint256[6] memory)
+    {
+        uint256[6] memory nfts;
+        uint localCounter;
+        for (uint i; i < 7; i++) {
+            if (addressToToken[_address][i]) {
+                nfts[localCounter] = i;
+                localCounter += 1;
+            }
+        }
+
+        return nfts;
     }
 }
