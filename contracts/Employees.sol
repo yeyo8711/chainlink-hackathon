@@ -5,12 +5,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BenefitsToken.sol";
 import "./EmployeePayroll.sol";
 import "./PayrollioNFT.sol";
+import "./VotingDAO.sol";
 
 contract Employees is Ownable {
-    BenefitsToken public BEN;
-    EmployeePayroll public PAYROLL;
-    uint256 public employeeCounter = 0;
-    PayrollioNFT public NFT;
+    BenefitsToken BEN;
+    EmployeePayroll PAYROLL;
+    PayrollioNFT NFT;
+    VotingDAO DAO;
+    uint256 public employeeCounter;
+    uint256 public dayOfTheMonth = 30;
 
     struct CompanyData {
         uint256 totalEmployees;
@@ -23,6 +26,7 @@ contract Employees is Ownable {
     }
 
     struct Employee {
+        uint256 id;
         string name;
         uint256 rank;
         uint256 dateOfBirth;
@@ -37,6 +41,7 @@ contract Employees is Ownable {
     mapping(address => bool) public isAdmin;
 
     event EmpoloyeeCreated(
+        uint256 indexed _id,
         string indexed _name,
         uint256 _rank,
         uint256 _dob,
@@ -45,6 +50,7 @@ contract Employees is Ownable {
     );
 
     event EmpoloyeeReleased(
+        uint256 indexed _id,
         string _name,
         uint256 _rank,
         uint256 _dob,
@@ -58,12 +64,19 @@ contract Employees is Ownable {
     constructor(
         address _BEN,
         address _payroll,
-        address _nft
+        address _nft,
+        address _dao
     ) {
         BEN = BenefitsToken(_BEN);
         PAYROLL = EmployeePayroll(_payroll);
         NFT = PayrollioNFT(_nft);
+        DAO = VotingDAO(_dao);
         isAdmin[msg.sender] = true;
+    }
+
+    modifier onlyAdmin() {
+        require(isAdmin[msg.sender], "Only Amins can call this function");
+        _;
     }
 
     // Create New Employee
@@ -73,10 +86,10 @@ contract Employees is Ownable {
         uint256 _dob,
         uint256 _salary,
         address _wallet
-    ) public {
-        require(isAdmin[msg.sender], "Only Amins can call this function");
+    ) public onlyAdmin {
         require(_rank > 0 && _rank < 5, "Rank doesnt exist");
         Employee storage employee = employees[employeeCounter];
+        employee.id = employeeCounter;
         employee.name = _name;
         employee.rank = _rank;
         employee.dateOfBirth = _dob;
@@ -107,20 +120,26 @@ contract Employees is Ownable {
 
         NFT.mint(employee.walletAddress, _rank);
 
-        emit EmpoloyeeCreated(_name, _rank, _dob, _salary, _wallet);
+        emit EmpoloyeeCreated(
+            employeeCounter,
+            _name,
+            _rank,
+            _dob,
+            _salary,
+            _wallet
+        );
     }
 
     // Delete Employee
-    function releaseEmployee(uint256 _employeeId) public {
-        require(isAdmin[msg.sender], "Only Amins can call this function");
+    function releaseEmployee(uint256 _employeeId) public onlyAdmin {
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         require(employee.active, "Employee already released");
         employee.active = false;
 
         CompanyData storage data = companyData[0];
-        data.totalEmployees += 1;
-        data.activeEmployees += 1;
+
+        data.activeEmployees -= 1;
         if (employee.rank == 1) {
             data.rank1Employees -= 1;
         } else if (employee.rank == 2) {
@@ -132,6 +151,7 @@ contract Employees is Ownable {
         }
 
         emit EmpoloyeeReleased(
+            _employeeId,
             employee.name,
             employee.rank,
             employee.dateOfBirth,
@@ -157,8 +177,7 @@ contract Employees is Ownable {
         uint256 _employeeId,
         uint256 _rank,
         uint256 _salary
-    ) public {
-        require(isAdmin[msg.sender], "Only Amins can call this function");
+    ) public onlyAdmin {
         require(_employeeId <= employeeCounter, "Employee ID does not exist");
         Employee storage employee = employees[_employeeId];
         require(_rank > employee.rank, "Cannot demote employee");
@@ -171,29 +190,33 @@ contract Employees is Ownable {
         emit AssignRank(_employeeId, _rank);
     }
 
-    /* ----------------- BENEFITS TOKEN ---------------*/
-    function replenishEmployeeTokens() public {
-        Employee[] memory activeEmployeesArr = getActiveEmployees();
-        for (uint i; i < activeEmployeesArr.length; i++) {
-            if (activeEmployeesArr[i].active) {
-                uint256 tokenBalance = BEN.balanceOf(
-                    activeEmployeesArr[i].walletAddress
-                );
-                uint256 tokensForRank = BEN.getAmountToRank(
-                    activeEmployeesArr[i].rank
-                );
-                if (tokenBalance < tokensForRank) {
-                    BEN.replenish(
-                        activeEmployeesArr[i].walletAddress,
-                        tokensForRank - tokenBalance
+    /* -------------- BENEFITS TOKEN ---------------*/
+    function replenishEmployeeTokens() public onlyAdmin {
+        if (dayOfTheMonth < 1) {
+            Employee[] memory activeEmployeesArr = getActiveEmployees();
+            for (uint i; i < activeEmployeesArr.length; i++) {
+                if (activeEmployeesArr[i].active) {
+                    uint256 tokenBalance = BEN.balanceOf(
+                        activeEmployeesArr[i].walletAddress
                     );
+                    uint256 tokensForRank = BEN.getAmountToRank(
+                        activeEmployeesArr[i].rank
+                    );
+                    if (tokenBalance < tokensForRank) {
+                        BEN.replenish(
+                            activeEmployeesArr[i].walletAddress,
+                            tokensForRank - tokenBalance
+                        );
+                    }
                 }
             }
+        } else {
+            dayOfTheMonth -= 1;
         }
     }
 
     /* ----------- PAYROLL ----------- */
-    function payActiveEmployees() public {
+    function payActiveEmployees() public onlyAdmin {
         for (uint i; i < employeeCounter; i++) {
             if (employees[i].active) {
                 if (employees[i].daysToNextPay > 1) {
@@ -212,6 +235,32 @@ contract Employees is Ownable {
                 }
             }
         }
+    }
+
+    /* ----------- DAO ----------- */
+    function initiateEmployeeOfTheMonthProposal(
+        uint256 _month,
+        address _nominee1,
+        address _nominee2,
+        address _nominee3
+    ) public onlyAdmin {
+        require(onlyActiveEmployee(_nominee1), "Nominee 1 is not active");
+        require(onlyActiveEmployee(_nominee2), "Nominee 2 is not active");
+        require(onlyActiveEmployee(_nominee3), "Nominee 3 is not active");
+
+        DAO.createNewVoting(_month, _nominee1, _nominee2, _nominee3);
+    }
+
+    function voteForEmployeeOfTheMonth(uint256 _nomineeId) public {
+        require(
+            onlyActiveEmployee(msg.sender),
+            "Voter is not an active employee"
+        );
+        DAO.vote(_nomineeId, msg.sender);
+    }
+
+    function endVotingOfEmployeeOfTheMonth() public onlyAdmin {
+        DAO.endVoting();
     }
 
     // Getter Functions
@@ -235,6 +284,17 @@ contract Employees is Ownable {
         }
 
         return activeEmployeeArray;
+    }
+
+    function onlyActiveEmployee(address _address) public view returns (bool) {
+        bool isActive;
+        for (uint256 i; i < employeeCounter; i++) {
+            Employee memory employee = getEmployee(i);
+            if (employee.walletAddress == _address) {
+                if (employee.active) isActive = true;
+            }
+        }
+        return isActive;
     }
 
     // Setter Functions

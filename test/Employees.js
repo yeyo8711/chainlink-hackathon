@@ -13,6 +13,7 @@ describe("Employees", async function () {
     employees,
     benefitsToken,
     payroll,
+    dao,
     payrollioNFT;
 
   before("Deploys Contracts", async function () {
@@ -20,49 +21,58 @@ describe("Employees", async function () {
     [deployer, account1, account2, account3, account4, account5, account6] =
       await ethers.getSigners();
 
+    // Deploy DAO Contract
+
+    const VotingDAO = await ethers.getContractFactory("VotingDAO");
+    dao = await VotingDAO.deploy();
+    await dao.deployed();
+
     // Deploy Token Contract
     const BenefitsToken = await ethers.getContractFactory("BenefitsToken");
     benefitsToken = await BenefitsToken.deploy();
     await benefitsToken.deployed();
-    console.log("BenefitsToken deployed at:", benefitsToken.address);
 
     // Deploy NFT Contract
     const PayrollioNFT = await ethers.getContractFactory("PayrollioNFT");
     payrollioNFT = await PayrollioNFT.deploy();
     await payrollioNFT.deployed();
-    console.log("NFTCotnract deployed at:", payrollioNFT.address);
 
     // Deploy Payroll Contract
     const Payroll = await ethers.getContractFactory("EmployeePayroll");
     payroll = await Payroll.deploy();
     await payroll.deployed();
-    console.log("Payroll deployed at:", payroll.address);
 
     // Deploy Employee Contract
     const Employee = await ethers.getContractFactory("Employees");
     employees = await Employee.deploy(
       benefitsToken.address,
       payroll.address,
-      payrollioNFT.address
+      payrollioNFT.address,
+      dao.address
     );
     await employees.deployed();
-    console.log("Employees deployed at:", employees.address);
+    console.log("ALL CONTRACTS DEPLOYED");
 
     // Update Contract Address
     await benefitsToken.updateEmployeeContract(employees.address);
     await payroll.updateEmployeeContractAddress(employees.address);
     await payroll.updateEmployeeContract(employees.address);
     await payrollioNFT.transferOwnership(employees.address);
+    await dao.transferOwnership(employees.address);
   });
 
   describe("Deployed with correct owner", function () {
     it("Should have the right owner", async function () {
-      const owner = await employees.owner();
-      expect(owner).to.equal(deployer.address);
+      const employeesOwner = await employees.owner();
+      expect(employeesOwner).to.equal(deployer.address);
+      const payrollioNFTOwner = await payrollioNFT.owner();
+      expect(payrollioNFTOwner).to.equal(employees.address);
+      const daoOwner = await dao.owner();
+      expect(daoOwner).to.equal(employees.address);
     });
   });
 
-  describe("Create Employee", function () {
+  describe("Employee Management", function () {
     before("Should create new employee", async function () {
       await employees.addEmployee(
         "John Doe",
@@ -103,7 +113,9 @@ describe("Employees", async function () {
         expect(balance).to.equal(0);
       });
       it("Should liquidate Employee", async function () {
-        expect(await payroll.balanceOf(account3.address)).to.equal(4080);
+        expect(await payroll.balanceOf(account3.address)).to.equal(
+          ethers.utils.parseEther("4080")
+        );
       });
       it("Revert if ID doesnt exist", async function () {
         await expect(employees.releaseEmployee(2)).to.be.revertedWith(
@@ -187,8 +199,10 @@ describe("Employees", async function () {
       employeeArray = await employees.getActiveEmployees();
       expect(typeof employeeArray).to.equal("object");
     });
-    it("Replenishes tokens to all active employees", async function () {
-      await employees.replenishEmployeeTokens();
+    it("Replenishes tokens to all active employees on day 30", async function () {
+      for (let i = 0; i < 31; i++) {
+        await employees.replenishEmployeeTokens();
+      }
 
       expect(await benefitsToken.balanceOf(account2.address)).to.equal(100000);
     });
@@ -205,7 +219,9 @@ describe("Employees", async function () {
       for (let i = 0; i < 32; i++) {
         await employees.payActiveEmployees();
       }
-      expect(await payroll.balanceOf(account4.address)).to.equal(4166);
+      expect(await payroll.balanceOf(account4.address)).to.equal(
+        ethers.utils.parseEther("4166")
+      );
     });
   });
 
@@ -235,7 +251,73 @@ describe("Employees", async function () {
     });
     it("Should mint an ex-employee NFT", async function () {
       await employees.releaseEmployee(5);
-      console.log(await payrollioNFT.getAccountsNFTs(account6.address));
+      expect(
+        typeof (await payrollioNFT.getAccountsNFTs(account6.address))
+      ).to.equal("object");
+    });
+  });
+
+  describe("DAO", function () {
+    it("Should revert if nominees are not active", async function () {
+      await expect(
+        employees.initiateEmployeeOfTheMonthProposal(
+          1,
+          account2.address,
+          account3.address,
+          account1.address
+        )
+      ).to.be.revertedWith("Nominee 3 is not active");
+    });
+    it("Should revert if nominees are duplicated", async function () {
+      await expect(
+        employees.initiateEmployeeOfTheMonthProposal(
+          1,
+          account2.address,
+          account3.address,
+          account3.address
+        )
+      ).to.be.revertedWith("Duplicate Candidates");
+    });
+    it("Should create a new proposal", async function () {
+      await employees.initiateEmployeeOfTheMonthProposal(
+        1,
+        account2.address,
+        account3.address,
+        account4.address
+      );
+      const proposal = await dao.votingRegistry(0);
+      expect(proposal.isActive).to.equal(true);
+    });
+    it("Should revert if there is an active proposal already", async function () {
+      await expect(
+        employees.initiateEmployeeOfTheMonthProposal(
+          1,
+          account2.address,
+          account3.address,
+          account3.address
+        )
+      ).to.be.revertedWith("A voting section is already live!");
+    });
+    it("Revert if Voter is not an active employee", async function () {
+      await expect(
+        employees.connect(account1).voteForEmployeeOfTheMonth(1)
+      ).to.be.revertedWith("Voter is not an active employee");
+    });
+    it("Revert if Voter already voted", async function () {
+      await employees.connect(account3).voteForEmployeeOfTheMonth(1);
+      await expect(
+        employees.connect(account3).voteForEmployeeOfTheMonth(1)
+      ).to.be.revertedWith("You can only vote once.");
+    });
+    it("Successfull Vote", async function () {
+      await employees.connect(account4).voteForEmployeeOfTheMonth(1);
+      expect(await dao.hasVoted(0, account4.address)).to.equal(true);
+    });
+    it("End Voting", async function () {
+      await employees.endVotingOfEmployeeOfTheMonth();
+      const proposal = await dao.votingRegistry(0);
+      expect(proposal.isActive).to.equal(false);
+      expect(proposal.employeeOfTheMonth).to.equal(account3.address);
     });
   });
 });

@@ -31,7 +31,7 @@ contract EmployeePayroll is ERC20, ERC20Burnable, Ownable {
     }
 
     function mint(address _to, uint256 _amount) public onlyEmployeeContract {
-        _mint(_to, _amount);
+        _mint(_to, _amount * 10**decimals());
     }
 
     /*---------- SETTERS AND GETTERS -------------*/
