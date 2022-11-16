@@ -24,7 +24,6 @@ contract VotingDAO is Ownable {
     event EmployeeOfTheMonth(address employee, uint month);
 
     function createNewVoting(
-        uint _month,
         address _candidate1,
         address _candidate2,
         address _candidate3
@@ -40,14 +39,14 @@ contract VotingDAO is Ownable {
 
         Voting storage voting = votingRegistry[votingCounter];
 
-        voting.month = _month;
+        voting.month = votingCounter;
         voting.isActive = true;
 
         voting.eligibleCandidates.push(_candidate1);
         voting.eligibleCandidates.push(_candidate2);
         voting.eligibleCandidates.push(_candidate3);
 
-        emit VotingCreate(_month);
+        emit VotingCreate(votingCounter);
     }
 
     function vote(uint256 _chosenEmployee, address _voter) public onlyOwner {
@@ -121,5 +120,10 @@ contract VotingDAO is Ownable {
     {
         bool voted = votingRegistry[_month].votingStatus[_voter];
         return voted;
+    }
+
+    function getPreviousEmployeeOfTheMonth() public view returns (address) {
+        Voting storage voting = votingRegistry[votingCounter - 1];
+        return voting.employeeOfTheMonth;
     }
 }

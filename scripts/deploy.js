@@ -120,12 +120,15 @@ async function main() {
   console.log("Employee 5 added.");
 
   // Add Thoby as Admin
+  console.log("Adding Thoby as admin..");
+
   const tx10 = await employees.setAdmin(
     "0xf7500C20F5063717f0933B0596C3B95042a5773E",
     true
   );
   await tx10.wait();
   // Add Chainlink Registry as Admin
+  console.log("Adding Chainlink as admin..");
   const tx12 = await employees.setAdmin(
     "0x02777053d6764996e594c3E88AF1D58D5363a2e6",
     true
@@ -139,10 +142,10 @@ main().catch((error) => {
 });
 
 /*
-BenefitsToken deployed at: 0x8f0f7b1DE7675342B4Fb7ed406d46e7472cD0090
-VotingDAO deployed at: 0x8b8c0B098e6319017746FC2Ef9a7fD284c8e0680
-NFTCotnract deployed at: 0x4CF89F8fe46b852646B55AD8B0AC5B60d2691F18
-Payroll deployed at: 0x808Dda83D4E5e553a10df8CF2f6264F0813E3f1e
-Employees deployed at: 0xAE68F1c111535855bFEF4E70Fa1d7499D3Fe01A2
+BenefitsToken deployed at: 0x456B22fcf74bEB0aF026A7C2F73E687d4b2dDaCB
+Payroll deployed at: 0xD91293D885F5c0d0501715e71110e925A9Dc844A
+NFTCotnract deployed at: 0xC13f8F2cB8087521469A021a52b26E65f4c60015
+VotingDAO deployed at: 0x8D07641F09Af613Efd1BD1E10B5669719DD3Ff8D
+Employees deployed at: 0xEd2FAef0199D18c379175b0a5cAcE1608f2c1A06
 
 */

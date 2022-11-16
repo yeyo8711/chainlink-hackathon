@@ -96,7 +96,7 @@ describe("Employees", async function () {
 
     it("Should mint benefitsTokens to employee", async function () {
       const balance = await benefitsToken.balanceOf(account3.address);
-      expect(balance).to.equal(100000);
+      expect(balance).to.equal(ethers.utils.parseEther("100000"));
     });
 
     describe("Release Employee", function () {
@@ -184,11 +184,15 @@ describe("Employees", async function () {
 
     it("John spends tokens on break", async function () {
       await benefitsToken.connect(account2).buyExtraBreak();
-      expect(await benefitsToken.balanceOf(account2.address)).to.equal(90000);
+      expect(await benefitsToken.balanceOf(account2.address)).to.equal(
+        ethers.utils.parseEther("90000")
+      );
     });
     it("John spends tokens on lunch", async function () {
       await benefitsToken.connect(account2).buyLunch();
-      expect(await benefitsToken.balanceOf(account2.address)).to.equal(80000);
+      expect(await benefitsToken.balanceOf(account2.address)).to.equal(
+        ethers.utils.parseEther("80000")
+      );
     });
     it("John tries to buy day off and TX reverts ", async function () {
       await expect(
@@ -204,7 +208,9 @@ describe("Employees", async function () {
         await employees.replenishEmployeeTokens();
       }
 
-      expect(await benefitsToken.balanceOf(account2.address)).to.equal(100000);
+      expect(await benefitsToken.balanceOf(account2.address)).to.equal(
+        ethers.utils.parseEther("100000")
+      );
     });
   });
 
@@ -261,7 +267,6 @@ describe("Employees", async function () {
     it("Should revert if nominees are not active", async function () {
       await expect(
         employees.initiateEmployeeOfTheMonthProposal(
-          1,
           account2.address,
           account3.address,
           account1.address
@@ -271,7 +276,6 @@ describe("Employees", async function () {
     it("Should revert if nominees are duplicated", async function () {
       await expect(
         employees.initiateEmployeeOfTheMonthProposal(
-          1,
           account2.address,
           account3.address,
           account3.address
@@ -280,7 +284,6 @@ describe("Employees", async function () {
     });
     it("Should create a new proposal", async function () {
       await employees.initiateEmployeeOfTheMonthProposal(
-        1,
         account2.address,
         account3.address,
         account4.address
@@ -291,7 +294,6 @@ describe("Employees", async function () {
     it("Should revert if there is an active proposal already", async function () {
       await expect(
         employees.initiateEmployeeOfTheMonthProposal(
-          1,
           account2.address,
           account3.address,
           account3.address
@@ -318,6 +320,17 @@ describe("Employees", async function () {
       const proposal = await dao.votingRegistry(0);
       expect(proposal.isActive).to.equal(false);
       expect(proposal.employeeOfTheMonth).to.equal(account3.address);
+    });
+    it("Fetches previous EOM", async function () {
+      const eom = await employees.getPreviousEmployeeOfTheMonth();
+      expect(typeof eom).to.equal("object");
+    });
+    it("Checks if an address has voted", async function () {
+      expect(await employees.hasVoted(0, account4.address)).to.equal(true);
+    });
+    it("Returns the 3 elegible cadidates as Employees", async function () {
+      const elegibleCandidates =
+        await employees.getElegibleCandidatesForVotingByMonth(0);
     });
   });
 });

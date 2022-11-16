@@ -239,7 +239,6 @@ contract Employees is Ownable {
 
     /* ----------- DAO ----------- */
     function initiateEmployeeOfTheMonthProposal(
-        uint256 _month,
         address _nominee1,
         address _nominee2,
         address _nominee3
@@ -248,7 +247,7 @@ contract Employees is Ownable {
         require(onlyActiveEmployee(_nominee2), "Nominee 2 is not active");
         require(onlyActiveEmployee(_nominee3), "Nominee 3 is not active");
 
-        DAO.createNewVoting(_month, _nominee1, _nominee2, _nominee3);
+        DAO.createNewVoting(_nominee1, _nominee2, _nominee3);
     }
 
     function voteForEmployeeOfTheMonth(uint256 _nomineeId) public {
@@ -295,6 +294,50 @@ contract Employees is Ownable {
             }
         }
         return isActive;
+    }
+
+    function getPreviousEmployeeOfTheMonth()
+        public
+        view
+        returns (Employee memory)
+    {
+        address winner = DAO.getPreviousEmployeeOfTheMonth();
+        return getEmployeeByAddress(winner);
+    }
+
+    function getEmployeeByAddress(address _address)
+        public
+        view
+        returns (Employee memory)
+    {
+        Employee memory employeeToReturn;
+        for (uint256 i; i < employeeCounter; i++) {
+            Employee storage employee = employees[i];
+            if (employee.walletAddress == _address) {
+                employeeToReturn = employees[i];
+            }
+        }
+        return employeeToReturn;
+    }
+
+    function hasVoted(uint256 _month, address _voter)
+        public
+        view
+        returns (bool)
+    {
+        return DAO.hasVoted(_month, _voter);
+    }
+
+    function getElegibleCandidatesForVotingByMonth(uint256 _month)
+        public
+        view
+        returns (Employee[3] memory elegibleCandidates)
+    {
+        address[] memory candidates = DAO.getVotingCandidatesByMonth(_month);
+        elegibleCandidates[0] = getEmployeeByAddress(candidates[0]);
+        elegibleCandidates[1] = getEmployeeByAddress(candidates[1]);
+        elegibleCandidates[2] = getEmployeeByAddress(candidates[2]);
+        return elegibleCandidates;
     }
 
     // Setter Functions

@@ -19,10 +19,10 @@ contract BenefitsToken is ERC20, ERC20Burnable, Ownable {
         bool active;
     }
 
-    uint256 public immutable rank1Amount = 100_000;
-    uint256 public immutable rank2Amount = 150_000;
-    uint256 public immutable rank3Amount = 200_000;
-    uint256 public immutable rank4Amount = 300_000;
+    uint256 public immutable rank1Amount = 100_000 * 10**18;
+    uint256 public immutable rank2Amount = 150_000 * 10**18;
+    uint256 public immutable rank3Amount = 200_000 * 10**18;
+    uint256 public immutable rank4Amount = 300_000 * 10**18;
     mapping(address => bool) public isAdmin;
 
     modifier onlyEmployeeContract() {
@@ -80,37 +80,37 @@ contract BenefitsToken is ERC20, ERC20Burnable, Ownable {
     ////////// BUY PERKS /////////
     function buyExtraBreak() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 10_000);
+        _burn(_msgSender(), 10_000 * 10**18);
     }
 
     function buyLunch() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 10_000);
+        _burn(_msgSender(), 10_000 * 10**18);
     }
 
     function buyHourOfMassage() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 10_000);
+        _burn(_msgSender(), 10_000 * 10**18);
     }
 
     function buyPlayRoomTime() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 10_000);
+        _burn(_msgSender(), 10_000 * 10**18);
     }
 
     function buyBreakfast() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 10_000);
+        _burn(_msgSender(), 10_000 * 10**18);
     }
 
     function buyYogaSession() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 10_000);
+        _burn(_msgSender(), 10_000 * 10**18);
     }
 
     function buyDayOff() public {
         require(balanceOf(msg.sender) > 0, "No tokens to left");
-        _burn(_msgSender(), 100_000);
+        _burn(_msgSender(), 100_000 * 10**18);
     }
 
     // Getters
